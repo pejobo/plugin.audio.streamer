@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+<strings>
+    <!-- Settings -->
+    <string id="1000">Access Token</string>
+    <string id="1001">User ID</string>
+    <string id="1002">Stream URL</string>
+</strings>

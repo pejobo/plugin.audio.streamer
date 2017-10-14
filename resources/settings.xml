@@ -1,0 +1,7 @@
+<settings>
+    <category label="User Token">
+        <setting id="access_token" type="text" label="Access Token" default=""/>
+        <setting id="user_id" type="text" label="User ID" default=""/>
+        <setting id="stream_url" type="text" label="Stream URL (for testing)" default=""/>
+    </category>
+</settings>
