@@ -33,16 +33,17 @@ class KodiFrontend(Frontend):
         return addon.getSetting(name)
 
     @staticmethod
-    def to_unicode(text):
+    def _to_unicode(text):
         result = text
         if isinstance(text, str):
             result = text.decode('utf-8')
         return result
 
-    def get_keyboard_input(self, title):
+    def get_keyboard_input(self, message):
+        """Request user input"""
         dialog = xbmcgui.Dialog()
-        result = dialog.input(KodiFrontend.to_unicode(title), KodiFrontend.to_unicode(''), type=xbmcgui.INPUT_ALPHANUM)
-        return KodiFrontend.to_unicode(result).strip()
+        result = dialog.input(self._to_unicode(message), self._to_unicode(''), type=xbmcgui.INPUT_ALPHANUM)
+        return self._to_unicode(result).strip()
 
     def render(self, items):
         xbmcplugin.addSortMethod(self._addon_handle, xbmcplugin.SORT_METHOD_NONE)
@@ -68,7 +69,7 @@ class KodiFrontend(Frontend):
                 item[Backend.YEAR]))
             list_item.setProperty('IsPlayable', 'true')
             list_item.setProperty('mimetype', 'audio/mpeg')
-            music_info =  {
+            music_info = {
                 'title': item[Backend.TRACK_TITLE],
                 'artist': item[Backend.ARTIST],
                 'album': item[Backend.ALBUM_NAME],

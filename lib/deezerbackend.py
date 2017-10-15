@@ -1,11 +1,11 @@
 # coding=UTF-8
 """"Deezer Backend"""
 
-import json
-import requests
 import inspect
-from addon import Backend
+import json
 from random import shuffle
+import requests
+from lib.addon import Backend
 
 class DeezerBackend(Backend):
     """Deezer backend"""
@@ -33,17 +33,17 @@ class DeezerBackend(Backend):
         return json.loads(content)
 
     def _to_boolean(self, x):
-        if x == 'True' or x == True:
+        if x == 'True' or x is True:
             return True
         if x == None:
             return None
         return False
 
-    def _ternary(self, bool, true_val, false_val, none_val):
-        b = self._to_boolean(bool)
-        if b == True:
+    def _ternary(self, bool_or_none, true_val, false_val, none_val):
+        b = self._to_boolean(bool_or_none)
+        if b is True:
             return true_val
-        if b == False:
+        if b is False:
             return false_val
         return none_val
 
@@ -293,12 +293,11 @@ class DeezerBackend(Backend):
     def get_stream_url(self, track_id):
         if self._stream_url:
             return self._stream_url.format(track_id=track_id)
-        else:
-            return self.load(self.API_STREAMING_URL, {
-                'access_token': self._access_token,
-                'track_id': track_id,
-                'device': 'panasonic'
-            })
+        return self.load(self.API_STREAMING_URL, {
+            'access_token': self._access_token,
+            'track_id': track_id,
+            'device': 'panasonic'
+        })
 
     def _extract_track(self, track_data, index, album, artist):
         result = {
@@ -356,4 +355,3 @@ class DeezerBackend(Backend):
             {'playlist_id': playlist_id, 'access_token': self._access_token}
         )
         self.log('unliked playlist %s: %i - %s' % (playlist_id, response.status_code, response.content[:40]))
-

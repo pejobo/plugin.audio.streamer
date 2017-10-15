@@ -3,9 +3,9 @@
 import unittest
 import difflib
 import json
-from addon import Addon
-from addon import Frontend
-from deezerbackend import DeezerBackend
+from lib.addon import Addon
+from lib.addon import Frontend
+from lib.deezerbackend import DeezerBackend
 
 class MockFrontend(Frontend):
     '''mock frontend class'''
@@ -60,26 +60,26 @@ class TestAddon(unittest.TestCase):
 
     def test_top_albums(self):
         self._url_2_json['http://api.deezer.com/chart/0?limit=20&index=20'] = {
-                "albums":
-                {
-                    "data":
-                    [
-                        {
-                            "id":"album-id", 
-                            "cover_big": "album-cover",
-                            "title": "album-title",
-                            "type": "album",
-                            "artist": {
-                                "id":"artist-id",
-                                "name":"artist-name",
-                                "picture_big": "artist-pic",
-                                "type": "artist"
-                            }
+            "albums":
+            {
+                "data":
+                [
+                    {
+                        "id":"album-id", 
+                        "cover_big": "album-cover",
+                        "title": "album-title",
+                        "type": "album",
+                        "artist": {
+                            "id":"artist-id",
+                            "name":"artist-name",
+                            "picture_big": "artist-pic",
+                            "type": "artist"
                         }
-                    ]
-                },
-                "total": "41"
-            }
+                    }
+                ]
+            },
+            "total": "41"
+        }
         self._addon.render('?mode=albums&page=1')
         self.assertResult(
             [{'target': {'mode': 'album', 'album_id': 'album-id'}, 'thumb': 'album-cover', 'label': 'album-title - artist-name'},
@@ -87,55 +87,55 @@ class TestAddon(unittest.TestCase):
 
     def test_album(self):
         self._url_2_json['http://api.deezer.com/album/302127'] = {
-                "id": "302127",
-                "title": "album_title",
-                "nb_tracks": "14",
-                "release_date": "2001-02-03",
-                "cover_big": "album-cover",
-                "type": "album",
-                "artist": {
-                    "id": "artist-id",
-                    "name": "artist-name"
-                },
-                "tracks": {
-                    "data": [
-                        {
-                            "id": "track-id",
-                            "title": "track-title",
-                            "duration": "320"
-                        },
-                        {
-                            "id": "track-id2",
-                            "title": "track-title2",
-                            "duration": "321"
-                        }
-                    ]
-                }
+            "id": "302127",
+            "title": "album_title",
+            "nb_tracks": "14",
+            "release_date": "2001-02-03",
+            "cover_big": "album-cover",
+            "type": "album",
+            "artist": {
+                "id": "artist-id",
+                "name": "artist-name"
+            },
+            "tracks": {
+                "data": [
+                    {
+                        "id": "track-id",
+                        "title": "track-title",
+                        "duration": "320"
+                    },
+                    {
+                        "id": "track-id2",
+                        "title": "track-title2",
+                        "duration": "321"
+                    }
+                ]
             }
+        }
         self._addon.render('?mode=album&album_id=302127')
         self.assertResult([
             # {'target': {'mode': 'like_album', 'album_id': '302127'}, 'label': u'\u2764 Like album'},
             {
                 'label': '1. track-title',
-                'thumb': 'album-cover', 
-                'track_count': '14', 
-                'title': 'track-title', 
+                'thumb': 'album-cover',
+                'track_count': '14',
+                'title': 'track-title',
                 'url': 'http://stream/track-id',
-                'artist': 'artist-name', 
-                'year': '2001', 
-                'duration': 320, 
-                'tracknumber': 1, 
+                'artist': 'artist-name',
+                'year': '2001',
+                'duration': 320,
+                'tracknumber': 1,
                 'album': 'album_title'
             },{
                 'label': '2. track-title2',
-                'thumb': 'album-cover', 
-                'track_count': '14', 
-                'title': 'track-title2', 
+                'thumb': 'album-cover',
+                'track_count': '14',
+                'title': 'track-title2',
                 'url': 'http://stream/track-id2',
-                'artist': 'artist-name', 
-                'year': '2001', 
-                'duration': 321, 
-                'tracknumber': 2, 
+                'artist': 'artist-name',
+                'year': '2001',
+                'duration': 321,
+                'tracknumber': 2,
                 'album': 'album_title'
             }])
 

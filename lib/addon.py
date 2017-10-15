@@ -10,9 +10,11 @@ class Addon:
         self._frontend.debug(debug)
 
     def log(self, message):
+        """Log message (delegates to frontend)"""
         self._frontend.log(message)
 
     def render(self, url):
+        """Render the menu for the specified url"""
         mode = None
         try:
             args =  urlparse.parse_qs(url[1:])
@@ -36,7 +38,7 @@ class Addon:
         self.log(sys.argv)
         self.render(sys.argv[2])
 
-        
+
 class Backend:
     """Empty audio backend"""
 
