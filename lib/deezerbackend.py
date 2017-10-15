@@ -82,7 +82,9 @@ class DeezerBackend(Backend):
         data = {
             self.ALBUM_NAME: album_data['title'],
             self.ARTIST: artist_data['name'],
-            self.THUMB: album_data['cover_big']
+            self.THUMB: album_data['cover_big'],
+            self.YEAR: None,
+            self.ALBUM_TRACK_COUNT: None
         }
         if 'nb_tracks' in album_data:
             data[self.ALBUM_TRACK_COUNT] = album_data['nb_tracks']
@@ -221,7 +223,8 @@ class DeezerBackend(Backend):
         tracks = self._load_json('http://api.deezer.com/playlist/' + playlist_id)['tracks']['data']
         shuffle(tracks)
         for track in tracks:
-            yield self._extract_track(track, -1, track['album'], track['artist'])
+            album_data = self._extract_album_data(track['album'], track['artist'])
+            yield self._extract_track(track, -1, album_data, track['artist'])
 
     def album(self, album_id):
         """Load album data"""
@@ -302,7 +305,7 @@ class DeezerBackend(Backend):
             self.TRACK_TITLE: track_data['title'],
             self.ARTIST: artist['name'],
             self.DURATION: int(track_data['duration']),
-            self.URL: self.get_stream_url(track_data['id']),
+            self.URL: self.get_stream_url(track_data['id'])
         }
         result.update(album)
         if index != -1:

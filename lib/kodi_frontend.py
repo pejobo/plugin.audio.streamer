@@ -68,15 +68,17 @@ class KodiFrontend(Frontend):
                 item[Backend.YEAR]))
             list_item.setProperty('IsPlayable', 'true')
             list_item.setProperty('mimetype', 'audio/mpeg')
-            list_item.setInfo('music',
-                {
-                    'tracknumber': item[Backend.TRACK_NUM],
-                    'duration': item[Backend.DURATION],
-                    'year': item[Backend.YEAR],
-                    'album': item[Backend.ALBUM_NAME],
-                    'artist': item[Backend.ARTIST],
-                    'title': item[Backend.TRACK_TITLE]
-                })
+            music_info =  {
+                'title': item[Backend.TRACK_TITLE],
+                'artist': item[Backend.ARTIST],
+                'album': item[Backend.ALBUM_NAME],
+                'duration': item[Backend.DURATION]
+            }
+            if Backend.YEAR in item:
+                music_info['year'] = item[Backend.YEAR]
+            if Backend.TRACK_NUM in item:
+                music_info['tracknumber'] = item[Backend.TRACK_NUM]
+            list_item.setInfo('music', music_info)
             return (item[Backend.URL], list_item, False)
         else:
             list_item.setLabel(item[Backend.LABEL])
