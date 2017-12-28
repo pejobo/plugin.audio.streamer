@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
+version=0.0.1
 rm lib/*.pyc
 python2 -m py_compile lib/*.py
+fulldir=$PWD
+dir=${PWD##*/}
 cd ..
-find plugin.audio.streamer -type f | grep -v ".git.*" | grep -v ".vscode.*" | grep -v "build.sh" | grep -v "test.py.*" | zip plugin.audio.streamer.0.0.1.zip -@
-cd plugin.audio.streamer
+zip -r $dir/$dir.$version.zip $dir -i \*.py \*.pyc \*.xml **/icon.png **/LICENSE.txt -x .vscode/**\* .git/**\* -x $dir/.vscode/**\* $dir/.git/**\*
+cd $fulldir

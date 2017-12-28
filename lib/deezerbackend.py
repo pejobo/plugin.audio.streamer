@@ -82,10 +82,12 @@ class DeezerBackend(Backend):
         data = {
             self.ALBUM_NAME: album_data['title'],
             self.ARTIST: artist_data['name'],
-            self.THUMB: album_data['cover_big'],
+            self.THUMB: None,
             self.YEAR: None,
             self.ALBUM_TRACK_COUNT: None
         }
+        if 'cover_big' in album_data:
+        	data[self.THUMB] = album_data['cover_big']
         if 'nb_tracks' in album_data:
             data[self.ALBUM_TRACK_COUNT] = album_data['nb_tracks']
         if 'release_date' in album_data:
