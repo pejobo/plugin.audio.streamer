@@ -14,22 +14,27 @@ class DeezerBackend(Backend):
     API_STREAMING_URL = 'http://tv.deezer.com/smarttv/streaming.php'
 
     def __init__(self, frontend, requester=None):
+        # http://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html
         Backend.__init__(self, frontend)
         self._access_token = frontend.get_setting('access_token')
-        # http://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html
         self._user_id = frontend.get_setting('user_id')
+        self._stream_url = frontend.get_setting('stream_url')
         if self._user_id == '' and self._access_token != '':
             self._user_id = self._load_json('http://api.deezer.com/user/me', {'access_token': self._access_token})['id']
             # todo: safe user id in settings
-        if hasattr(self, '_user_id'):
-            self.log('user id is %s' % self._user_id)
-        self._stream_url = frontend.get_setting('stream_url')
+        self.log('user id is %s' % self._user_id)
+        self.log('token is %s' % self._access_token)
+        self.log('stream url is %s' % self._stream_url)
         self._requester = requester if requester else self
 
-    def load_json(self, url, params={}):
-        self._frontend.log('loading json ' + url)
+    def load_from_url(self, url, params={}):
+        self._frontend.log('loading ' + url)
         content = requests.get(url, params=params).text
         self.log('loaded: ' + content[:40] + '...')
+        return content
+
+    def load_json(self, url, params={}):
+        content = self.load_from_url(url, params)
         return json.loads(content)
 
     def _to_boolean(self, x):
@@ -57,7 +62,7 @@ class DeezerBackend(Backend):
 
     def _load_json(self, url, params={}):
         """Loads the content from the provided url and parse it as json"""
-        return self._requester.load_json(url)
+        return self._requester.load_json(url, params)
 
     def load(self, url, params={}):
         self._frontend.log('loading ' + url)
@@ -124,13 +129,15 @@ class DeezerBackend(Backend):
             }
         }
 
-    def _next_page(self, page, total, items_per_page, additional_target_params={}):
+    def _next_page(self, page, total, items_per_page, params={}):
         page = int(page)
         next_page = page + 1
         if int(total) > (next_page * int(items_per_page)):
             target = inspect.currentframe().f_back.f_code.co_name
             target_data = {self.MODE: target, 'page': next_page}
-            target_data.update(additional_target_params)
+            for key, value in params.items():
+                if (value):
+                    target_data[key] = value
             yield {self.LABEL: 'page ' + str(next_page + 1), self.TARGET: target_data}
 
     def check_stream_url(self):
@@ -156,46 +163,37 @@ class DeezerBackend(Backend):
         yield {self.LABEL: u'💔 Remove album likes', self.TARGET: {self.MODE: self.my_albums.__name__, 'like': False}}
         yield {self.LABEL: u'💔 Remove playlists likes', self.TARGET: {self.MODE: self.my_playlists.__name__, 'like': False}}
 
-    def unlike_artists(self, page=0):
-        """Menu to remove artists from likes"""
-        url = 'https://api.deezer.com/user/me/artists?&limit=20&index=%i'
-        data = self._load_json(url % int(page)* 20, {'access_token': self._access_token})
-        for artist in data['data']:
-            yield self._extract_artist(artist, like=False)
-        for next_page in self._next_page(int(page), int(data['total']), 20):
-            yield next_page
-
     def _get_me_url(self):
         return 'https://api.deezer.com/user/' + self._user_id
 
     def my_artists(self, page=0, like=None):
         """Favorite artists"""
         url = self._get_me_url() + '/artists?&limit=20&index=%i'
-        data = self._load_json(url % int(page) * 20, {'access_token': self._access_token})
+        data = self._load_json(url % (int(page) * 20), {'access_token': self._access_token})
         if 'data' in data:
             for artist in data['data']:
                 yield self._extract_artist(artist, like=like)
-            for next_page in self._next_page(int(page), int(data['total']), 20):
+            for next_page in self._next_page(int(page), int(data['total']), 20, {'like': like}):
                 yield next_page
 
     def my_albums(self, page=0, like=None):
         """Favorite albums"""
         url = self._get_me_url() + '/albums?&limit=20&index=%i'
-        data = self._load_json(url % int(page) * 20, {'access_token': self._access_token})
+        data = self._load_json(url % (int(page) * 20), {'access_token': self._access_token})
         if 'data' in data:
             for album in data['data']:
                 yield self._extract_album(album, like=like)
-            for next_page in self._next_page(int(page), int(data['total']), 20):
+            for next_page in self._next_page(int(page), int(data['total']), 20, {'like': like}):
                 yield next_page
 
     def my_playlists(self, page=0, like=None):
         """Favorite playlists"""
         url = self._get_me_url() + '/playlists?&limit=20&index=%i'
-        data = self._load_json(url % int(page) * 20, {'access_token': self._access_token})
+        data = self._load_json(url % (int(page) * 20), {'access_token': self._access_token})
         if 'data' in data:
             for playlist in data['data']:
                 yield self._extract_playlist(playlist, like=like)
-            for next_page in self._next_page(int(page), int(data['total']), 20):
+            for next_page in self._next_page(int(page), int(data['total']), 20, {'like': like}):
                 yield next_page
 
     def search(self, query=None, page=0):
@@ -223,6 +221,7 @@ class DeezerBackend(Backend):
     def playlist(self, playlist_id):
         """Display playlist content"""
         tracks = self._load_json('http://api.deezer.com/playlist/' + playlist_id)['tracks']['data']
+        tracks = [t for t in tracks]
         shuffle(tracks)
         for track in tracks:
             album_data = self._extract_album_data(track['album'], track['artist'])
@@ -272,7 +271,7 @@ class DeezerBackend(Backend):
         artist_data = self._load_json("http://api.deezer.com/artist/" + artist_id)
         for album in data['data']:
             yield self._extract_album(album, artist_data, like)
-        for next_page in self._next_page(page, data['total'], 20, {'like': like}):
+        for next_page in self._next_page(page, data['total'], 20, {'artist_id': artist_id, 'like': like}):
             yield next_page
 
     def artist_playlists(self, artist_id, page=0, like=None):
@@ -281,7 +280,7 @@ class DeezerBackend(Backend):
         if 'data' in data:
             for playlist in data['data']:
                 yield self._extract_playlist(playlist, like)
-            for next_page in self._next_page(page, data['total'], 20, {'like': like}):
+            for next_page in self._next_page(page, data['total'], 20, {'artist_id': artist_id, 'like': like}):
                 yield next_page
 
     def track(self, track_id):
@@ -318,42 +317,42 @@ class DeezerBackend(Backend):
 
     def like_artist(self, artist_id):
         response = requests.get(
-            'https://api.deezer.com/user/%s/artists&request_method=POST' % self._user_id,
+            self._get_me_url() + '/artists&request_method=POST' % self._user_id,
             {'artist_id': artist_id, 'access_token': self._access_token}
         )
         self.log('liked artist %s: %i - %s' % (artist_id, response.status_code, response.content[:40]))
 
     def like_album(self, album_id):
         response = requests.get(
-            'https://api.deezer.com/user/%s/albums&request_method=POST' % self._user_id,
+            self._get_me_url() + '/albums&request_method=POST' % self._user_id,
             {'album_id': album_id, 'access_token': self._access_token}
         )
         self.log('liked album %s: %i - %s' % (album_id, response.status_code, response.content[:40]))
 
     def like_playlist(self, playlist_id):
         response = requests.get(
-            'https://api.deezer.com/user/%s/playlists&request_method=POST' % self._user_id,
+            self._get_me_url() + '/playlists&request_method=POST' % self._user_id,
             {'playlist_id': playlist_id, 'access_token': self._access_token}
         )
         self.log('liked playlist %s: %i - %s' % (playlist_id, response.status_code, response.content[:40]))
 
     def unlike_artist(self, artist_id):
         response = requests.get(
-            'https://api.deezer.com/user/%s/artists&request_method=DELETE' % self._user_id,
+            self._get_me_url() + '/artists&request_method=DELETE',
             {'artist_id': artist_id, 'access_token': self._access_token}
         )
         self.log('unliked artist %s: %i - %s' % (artist_id, response.status_code, response.content[:40]))
 
     def unlike_album(self, album_id):
         response = requests.get(
-            'https://api.deezer.com/user/%s/albums&request_method=DELETE' % self._user_id,
+            self._get_me_url() + '/albums&request_method=DELETE',
             {'album_id': album_id, 'access_token': self._access_token}
         )
         self.log('unliked album %s: %i - %s' % (album_id, response.status_code, response.content[:40]))
 
     def unlike_playlist(self, playlist_id):
         response = requests.get(
-            'https://api.deezer.com/user/%s/playlists&request_method=PODELETE' % self._user_id,
+            self._get_me_url() + '/playlists&request_method=DELETE',
             {'playlist_id': playlist_id, 'access_token': self._access_token}
         )
         self.log('unliked playlist %s: %i - %s' % (playlist_id, response.status_code, response.content[:40]))

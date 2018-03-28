@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-version=0.0.1
+version=0.0.30
 rm lib/*.pyc
 python2 -m py_compile lib/*.py
 fulldir=$PWD
